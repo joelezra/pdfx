@@ -1,0 +1,9 @@
+{
+  "apps": [
+    {
+      "name": "PDFX",
+      "path": "ios",
+      "framework": "swift"
+    }
+  ]
+}
