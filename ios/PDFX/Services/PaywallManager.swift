@@ -4,17 +4,20 @@ import Foundation
 @MainActor
 class PaywallManager {
     var editCount: Int {
-        get { UserDefaults.standard.integer(forKey: "pdfx_edit_count") }
-        set { UserDefaults.standard.set(newValue, forKey: "pdfx_edit_count") }
+        didSet { UserDefaults.standard.set(editCount, forKey: "pdfx_edit_count") }
     }
 
     var isPro: Bool {
-        get { UserDefaults.standard.bool(forKey: "pdfx_is_pro") }
-        set { UserDefaults.standard.set(newValue, forKey: "pdfx_is_pro") }
+        didSet { UserDefaults.standard.set(isPro, forKey: "pdfx_is_pro") }
     }
 
     var shouldShowPaywall: Bool {
         !isPro && editCount >= 3
+    }
+
+    init() {
+        self.editCount = UserDefaults.standard.integer(forKey: "pdfx_edit_count")
+        self.isPro = UserDefaults.standard.bool(forKey: "pdfx_is_pro")
     }
 
     func recordEdit() {
