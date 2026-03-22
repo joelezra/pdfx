@@ -15,14 +15,18 @@ struct DocumentEditorView: View {
     @State private var showPaywall: Bool = false
     @State private var saveHaptic: Int = 0
     @State private var showSavedCheck: Bool = false
+    @State private var cachedImages: [UIImage] = []
 
     private let ocrService = OCRService()
     private let pdfService = PDFService()
 
     private var currentImage: UIImage? {
-        let images = document.pageImages
-        guard currentPageIndex < images.count else { return nil }
-        return images[currentPageIndex]
+        guard currentPageIndex < cachedImages.count else { return nil }
+        return cachedImages[currentPageIndex]
+    }
+
+    private func loadImages() {
+        cachedImages = document.pageImages
     }
 
     var body: some View {
@@ -32,7 +36,7 @@ struct DocumentEditorView: View {
             VStack(spacing: 0) {
                 documentViewer
 
-                if document.pageImages.count > 1 {
+                if cachedImages.count > 1 {
                     pageIndicator
                 }
             }
@@ -75,6 +79,7 @@ struct DocumentEditorView: View {
             PaywallView()
         }
         .sensoryFeedback(.success, trigger: saveHaptic)
+        .onAppear { loadImages() }
         .task {
             await runOCR()
         }
@@ -218,6 +223,7 @@ struct DocumentEditorView: View {
         if let image = currentImage {
             let rendered = pdfService.renderEditedImage(original: image, regions: textRegions, imageSize: image.size)
             store.updateDocument(document, editedImage: rendered, pageIndex: currentPageIndex)
+            cachedImages[currentPageIndex] = rendered
         }
 
         saveHaptic += 1
