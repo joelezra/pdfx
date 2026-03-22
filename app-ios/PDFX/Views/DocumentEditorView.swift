@@ -35,10 +35,6 @@ struct DocumentEditorView: View {
 
             VStack(spacing: 0) {
                 documentViewer
-
-                if cachedImages.count > 1 {
-                    pageIndicator
-                }
             }
 
             if isProcessingOCR {
@@ -87,54 +83,45 @@ struct DocumentEditorView: View {
 
     private var documentViewer: some View {
         GeometryReader { geo in
-            ScrollView {
-                if let image = currentImage {
-                    let aspectRatio = image.size.width / image.size.height
-                    let displayWidth = geo.size.width
-                    let displayHeight = displayWidth / aspectRatio
+            TabView(selection: $currentPageIndex) {
+                ForEach(cachedImages.indices, id: \.self) { index in
+                    ScrollView {
+                        let image = cachedImages[index]
+                        let aspectRatio = image.size.width / image.size.height
+                        let displayWidth = geo.size.width
+                        let displayHeight = displayWidth / aspectRatio
 
-                    ZStack {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: displayWidth)
+                        ZStack {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: displayWidth)
 
-                        ForEach(textRegions) { region in
-                            let rect = convertToViewRect(region.boundingBox, displaySize: CGSize(width: displayWidth, height: displayHeight))
-                            Button {
-                                handleRegionTap(region)
-                            } label: {
-                                Rectangle()
-                                    .fill(region.editedText != nil ? Theme.electricBlue.opacity(0.1) : Color.clear)
-                                    .border(selectedRegion?.id == region.id ? Theme.electricBlue : Color.clear, width: 2)
+                            if index == currentPageIndex {
+                                ForEach(textRegions) { region in
+                                    let rect = convertToViewRect(region.boundingBox, displaySize: CGSize(width: displayWidth, height: displayHeight))
+                                    Button {
+                                        handleRegionTap(region)
+                                    } label: {
+                                        Rectangle()
+                                            .fill(region.editedText != nil ? Theme.electricBlue.opacity(0.1) : Color.clear)
+                                            .border(selectedRegion?.id == region.id ? Theme.electricBlue : Color.clear, width: 2)
+                                    }
+                                    .frame(width: rect.width, height: rect.height)
+                                    .position(x: rect.midX, y: rect.midY)
+                                }
                             }
-                            .frame(width: rect.width, height: rect.height)
-                            .position(x: rect.midX, y: rect.midY)
                         }
+                        .frame(width: displayWidth, height: displayHeight)
                     }
-                    .frame(width: displayWidth, height: displayHeight)
+                    .tag(index)
                 }
             }
-        }
-    }
-
-    private var pageIndicator: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<cachedImages.count, id: \.self) { index in
-                Button {
-                    withAnimation(.snappy) {
-                        currentPageIndex = index
-                    }
-                    Task { await runOCR() }
-                } label: {
-                    Circle()
-                        .fill(index == currentPageIndex ? Theme.electricBlue : Theme.warmGray.opacity(0.4))
-                        .frame(width: 8, height: 8)
-                }
+            .tabViewStyle(.page(indexDisplayMode: cachedImages.count > 1 ? .automatic : .never))
+            .onChange(of: currentPageIndex) { _, _ in
+                Task { await runOCR() }
             }
         }
-        .padding(.vertical, 12)
-        .background(Theme.offWhite)
     }
 
     private var ocrOverlay: some View {
