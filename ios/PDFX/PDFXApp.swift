@@ -10,6 +10,7 @@ struct PDFXApp: App {
             ContentView()
                 .environment(store)
                 .environment(paywallManager)
+                .preferredColorScheme(.light)
         }
     }
 }
