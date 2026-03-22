@@ -2,7 +2,7 @@
   "apps": [
     {
       "name": "PDFX",
-      "path": "ios",
+      "path": "app-ios",
       "framework": "swift"
     }
   ]
