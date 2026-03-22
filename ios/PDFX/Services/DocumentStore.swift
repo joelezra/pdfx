@@ -11,6 +11,7 @@ class DocumentStore {
         loadMetadata()
     }
 
+    @discardableResult
     func addDocument(from images: [UIImage], name: String? = nil) -> PDFDocumentModel {
         let id = UUID()
         var fileNames: [String] = []
@@ -63,13 +64,6 @@ class DocumentStore {
         saveMetadata()
     }
 
-    func renameDocument(_ document: PDFDocumentModel, to name: String) {
-        guard let idx = documents.firstIndex(where: { $0.id == document.id }) else { return }
-        documents[idx].name = name
-        documents[idx].updatedAt = .now
-        saveMetadata()
-    }
-
     func deleteDocument(_ document: PDFDocumentModel) {
         let allFiles = document.pageImageFileNames + document.editedPageImageFileNames
         for fileName in allFiles {
@@ -78,10 +72,6 @@ class DocumentStore {
         }
         documents.removeAll { $0.id == document.id }
         saveMetadata()
-    }
-
-    func document(for id: UUID) -> PDFDocumentModel? {
-        documents.first { $0.id == id }
     }
 
     private func loadMetadata() {

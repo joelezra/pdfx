@@ -18,11 +18,8 @@ struct ScannerView: View {
 
             VStack(spacing: 0) {
                 Spacer()
-
                 cameraPlaceholder
-
                 Spacer()
-
                 bottomControls
             }
         }

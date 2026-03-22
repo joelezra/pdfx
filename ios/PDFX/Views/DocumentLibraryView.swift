@@ -22,7 +22,11 @@ struct DocumentLibraryView: View {
             Theme.offWhite.ignoresSafeArea()
 
             if store.documents.isEmpty {
-                emptyState
+                ContentUnavailableView {
+                    Label("No Documents", systemImage: "doc.text.magnifyingglass")
+                } description: {
+                    Text("Scan or import a document to get started.")
+                }
             } else {
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 20) {
@@ -44,7 +48,6 @@ struct DocumentLibraryView: View {
         }
         .navigationTitle("Library")
         .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(Theme.offWhite, for: .navigationBar)
         .alert("Delete Document?", isPresented: $showDeleteAlert, presenting: documentToDelete) { doc in
             Button("Delete", role: .destructive) {
                 withAnimation(.snappy) {
@@ -59,14 +62,6 @@ struct DocumentLibraryView: View {
             NavigationStack {
                 DocumentEditorView(document: doc)
             }
-        }
-    }
-
-    private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No Documents", systemImage: "doc.text.magnifyingglass")
-        } description: {
-            Text("Scan or import a document to get started.")
         }
     }
 }

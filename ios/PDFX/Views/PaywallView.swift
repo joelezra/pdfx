@@ -46,13 +46,9 @@ struct PaywallView: View {
                 ScrollView {
                     VStack(spacing: 32) {
                         headerSection
-
                         featuresSection
-
                         plansSection
-
                         ctaButton
-
                         termsSection
                     }
                     .padding(.horizontal, 24)
@@ -128,17 +124,10 @@ struct PaywallView: View {
 
     private var plansSection: some View {
         HStack(spacing: 12) {
-            PlanCard(
-                plan: .yearly,
-                isSelected: selectedPlan == .yearly
-            ) {
+            PlanCard(plan: .yearly, isSelected: selectedPlan == .yearly) {
                 selectedPlan = .yearly
             }
-
-            PlanCard(
-                plan: .monthly,
-                isSelected: selectedPlan == .monthly
-            ) {
+            PlanCard(plan: .monthly, isSelected: selectedPlan == .monthly) {
                 selectedPlan = .monthly
             }
         }

@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-struct PDFDocumentModel: Identifiable, Codable, Hashable {
+nonisolated struct PDFDocumentModel: Identifiable, Codable, Hashable {
     let id: UUID
     var name: String
     let createdAt: Date
@@ -9,6 +9,7 @@ struct PDFDocumentModel: Identifiable, Codable, Hashable {
     let pageImageFileNames: [String]
     var editedPageImageFileNames: [String]
 
+    @MainActor
     var fileSize: Int64 {
         let fm = FileManager.default
         var total: Int64 = 0
@@ -22,6 +23,7 @@ struct PDFDocumentModel: Identifiable, Codable, Hashable {
         return total
     }
 
+    @MainActor
     var formattedFileSize: String {
         ByteCountFormatter.string(fromByteCount: fileSize, countStyle: .file)
     }
@@ -30,6 +32,7 @@ struct PDFDocumentModel: Identifiable, Codable, Hashable {
         updatedAt.formatted(date: .abbreviated, time: .shortened)
     }
 
+    @MainActor
     var thumbnailImage: UIImage? {
         let fileName = editedPageImageFileNames.first ?? pageImageFileNames.first
         guard let fileName else { return nil }
@@ -37,6 +40,7 @@ struct PDFDocumentModel: Identifiable, Codable, Hashable {
         return UIImage(contentsOfFile: url.path)
     }
 
+    @MainActor
     var pageImages: [UIImage] {
         let fileNames = editedPageImageFileNames.isEmpty ? pageImageFileNames : editedPageImageFileNames
         return fileNames.compactMap { fileName in
@@ -45,17 +49,18 @@ struct PDFDocumentModel: Identifiable, Codable, Hashable {
         }
     }
 
+    @MainActor
     static var storageDirectory: URL {
         let dir = URL.documentsDirectory.appendingPathComponent("PDFXDocuments", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
 
-    nonisolated func hash(into hasher: inout Hasher) {
+    func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 
-    nonisolated static func == (lhs: PDFDocumentModel, rhs: PDFDocumentModel) -> Bool {
+    static func == (lhs: PDFDocumentModel, rhs: PDFDocumentModel) -> Bool {
         lhs.id == rhs.id
     }
 }

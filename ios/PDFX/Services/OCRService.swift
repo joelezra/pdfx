@@ -16,10 +16,9 @@ class OCRService {
 
                 let regions = observations.compactMap { observation -> TextRegion? in
                     guard let candidate = observation.topCandidates(1).first else { return nil }
-                    let box = observation.boundingBox
                     return TextRegion(
                         text: candidate.string,
-                        boundingBox: box
+                        boundingBox: observation.boundingBox
                     )
                 }
                 continuation.resume(returning: regions)

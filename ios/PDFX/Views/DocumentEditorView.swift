@@ -1,5 +1,4 @@
 import SwiftUI
-import Vision
 
 struct DocumentEditorView: View {
     @Environment(DocumentStore.self) private var store
@@ -16,19 +15,14 @@ struct DocumentEditorView: View {
     @State private var showPaywall: Bool = false
     @State private var saveHaptic: Int = 0
     @State private var showSavedCheck: Bool = false
-    @State private var imageSize: CGSize = .zero
-    @State private var cachedImages: [UIImage] = []
 
     private let ocrService = OCRService()
     private let pdfService = PDFService()
 
     private var currentImage: UIImage? {
-        guard currentPageIndex < cachedImages.count else { return nil }
-        return cachedImages[currentPageIndex]
-    }
-
-    private func loadImages() {
-        cachedImages = document.pageImages
+        let images = document.pageImages
+        guard currentPageIndex < images.count else { return nil }
+        return images[currentPageIndex]
     }
 
     var body: some View {
@@ -38,7 +32,7 @@ struct DocumentEditorView: View {
             VStack(spacing: 0) {
                 documentViewer
 
-                if cachedImages.count > 1 {
+                if document.pageImages.count > 1 {
                     pageIndicator
                 }
             }
@@ -51,8 +45,8 @@ struct DocumentEditorView: View {
                 savedCheckmark
             }
 
-            if let region = selectedRegion {
-                editOverlay(for: region)
+            if selectedRegion != nil {
+                editOverlay
             }
         }
         .navigationTitle(document.name)
@@ -66,24 +60,21 @@ struct DocumentEditorView: View {
                     .foregroundStyle(.white)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                HStack(spacing: 16) {
-                    Button("Share", systemImage: "square.and.arrow.up") {
-                        showShareSheet = true
-                    }
+                Button("Share", systemImage: "square.and.arrow.up") {
+                    showShareSheet = true
                 }
                 .foregroundStyle(.white)
             }
         }
         .sheet(isPresented: $showShareSheet) {
-            if let image = currentImage {
-                ShareSheet(items: shareItems(for: image))
+            if let _ = currentImage {
+                ShareSheet(items: shareItems())
             }
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView()
         }
         .sensoryFeedback(.success, trigger: saveHaptic)
-        .onAppear { loadImages() }
         .task {
             await runOCR()
         }
@@ -104,7 +95,7 @@ struct DocumentEditorView: View {
                             .frame(width: displayWidth)
 
                         ForEach(textRegions) { region in
-                            let rect = convertToViewRect(region.boundingBox, imageSize: image.size, displaySize: CGSize(width: displayWidth, height: displayHeight))
+                            let rect = convertToViewRect(region.boundingBox, displaySize: CGSize(width: displayWidth, height: displayHeight))
                             Button {
                                 handleRegionTap(region)
                             } label: {
@@ -117,9 +108,6 @@ struct DocumentEditorView: View {
                         }
                     }
                     .frame(width: displayWidth, height: displayHeight)
-                    .onAppear {
-                        imageSize = CGSize(width: displayWidth, height: displayHeight)
-                    }
                 }
             }
         }
@@ -165,7 +153,7 @@ struct DocumentEditorView: View {
             .transition(.scale.combined(with: .opacity))
     }
 
-    private func editOverlay(for region: TextRegion) -> some View {
+    private var editOverlay: some View {
         VStack {
             Spacer()
             VStack(spacing: 16) {
@@ -230,7 +218,6 @@ struct DocumentEditorView: View {
         if let image = currentImage {
             let rendered = pdfService.renderEditedImage(original: image, regions: textRegions, imageSize: image.size)
             store.updateDocument(document, editedImage: rendered, pageIndex: currentPageIndex)
-            cachedImages[currentPageIndex] = rendered
         }
 
         saveHaptic += 1
@@ -253,7 +240,7 @@ struct DocumentEditorView: View {
         isProcessingOCR = false
     }
 
-    private func convertToViewRect(_ visionBox: CGRect, imageSize: CGSize, displaySize: CGSize) -> CGRect {
+    private func convertToViewRect(_ visionBox: CGRect, displaySize: CGSize) -> CGRect {
         CGRect(
             x: visionBox.origin.x * displaySize.width,
             y: (1 - visionBox.origin.y - visionBox.height) * displaySize.height,
@@ -262,7 +249,7 @@ struct DocumentEditorView: View {
         )
     }
 
-    private func shareItems(for image: UIImage) -> [Any] {
+    private func shareItems() -> [Any] {
         var items: [Any] = []
         if let pdfData = pdfService.generatePDF(from: document.pageImages) {
             let tempURL = URL.temporaryDirectory.appendingPathComponent("\(document.name).pdf")
