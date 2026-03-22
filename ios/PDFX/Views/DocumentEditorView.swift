@@ -120,7 +120,7 @@ struct DocumentEditorView: View {
 
     private var pageIndicator: some View {
         HStack(spacing: 6) {
-            ForEach(0..<document.pageImages.count, id: \.self) { index in
+            ForEach(0..<cachedImages.count, id: \.self) { index in
                 Button {
                     withAnimation(.snappy) {
                         currentPageIndex = index
