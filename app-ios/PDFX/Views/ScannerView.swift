@@ -1,10 +1,9 @@
 import SwiftUI
-import VisionKit
 import PhotosUI
 
 struct ScannerView: View {
     @Environment(DocumentStore.self) private var store
-    @State private var showDocumentScanner = false
+    @State private var showCustomCamera = false
     @State private var showPhotoPicker = false
     @State private var showFileImporter = false
     @State private var showImportOptions = false
@@ -23,13 +22,19 @@ struct ScannerView: View {
                 bottomControls
             }
         }
-        .sheet(isPresented: $showDocumentScanner) {
-            DocumentScannerRepresentable { images in
-                let doc = store.addDocument(from: images)
-                scanHaptic += 1
-                navigateToDocument = doc
-            }
-            .ignoresSafeArea()
+        .fullScreenCover(isPresented: $showCustomCamera) {
+            CustomCameraView(
+                onComplete: { images in
+                    showCustomCamera = false
+                    guard !images.isEmpty else { return }
+                    let doc = store.addDocument(from: images)
+                    scanHaptic += 1
+                    navigateToDocument = doc
+                },
+                onCancel: {
+                    showCustomCamera = false
+                }
+            )
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotos, maxSelectionCount: 10, matching: .images)
         .onChange(of: selectedPhotos) { _, newItems in
@@ -109,7 +114,7 @@ struct ScannerView: View {
                 }
 
                 Button {
-                    showDocumentScanner = true
+                    showCustomCamera = true
                 } label: {
                     ZStack {
                         Circle()
@@ -174,54 +179,6 @@ struct ScannerView: View {
             let doc = store.addDocument(from: images, name: name)
             scanHaptic += 1
             navigateToDocument = doc
-        }
-    }
-}
-
-struct DocumentScannerRepresentable: UIViewControllerRepresentable {
-    let completion: ([UIImage]) -> Void
-
-    func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
-        let scanner = VNDocumentCameraViewController()
-        scanner.delegate = context.coordinator
-        return scanner
-    }
-
-    func updateUIViewController(_ uiViewController: VNDocumentCameraViewController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(completion: completion)
-    }
-
-    class Coordinator: NSObject, VNDocumentCameraViewControllerDelegate {
-        let completion: ([UIImage]) -> Void
-
-        init(completion: @escaping ([UIImage]) -> Void) {
-            self.completion = completion
-        }
-
-        nonisolated func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFinishWith scan: VNDocumentCameraScan) {
-            var images: [UIImage] = []
-            for i in 0..<scan.pageCount {
-                images.append(scan.imageOfPage(at: i))
-            }
-            let capturedImages = images
-            Task { @MainActor in
-                self.completion(capturedImages)
-                controller.dismiss(animated: true)
-            }
-        }
-
-        nonisolated func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {
-            Task { @MainActor in
-                controller.dismiss(animated: true)
-            }
-        }
-
-        nonisolated func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFailWithError error: Error) {
-            Task { @MainActor in
-                controller.dismiss(animated: true)
-            }
         }
     }
 }
